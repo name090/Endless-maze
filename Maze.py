@@ -51,7 +51,7 @@ exit_hover_image = pygame.image.load("image/exit_m2.png")
 wall_image = pygame.transform.scale(wall_image, (CELL_SIZE, CELL_SIZE))
 exit_image = pygame.transform.scale(exit_image, (CELL_SIZE, CELL_SIZE))
 for key in player_images:
-    player_images[key] = pygame.transform.scale(player_images[key], (CELL_SIZE - 2, CELL_SIZE - 2))
+    player_images[key] = pygame.transform.scale(player_images[key], (CELL_SIZE, CELL_SIZE))
 
 # Масштабування зображень кнопок
 button_width, button_height = 200, 80
@@ -147,6 +147,7 @@ def game():
     
     level = 1
     player_x, player_y = 0, 0
+    player_speed = 16
     player_direction = "down"
     clock = pygame.time.Clock()
     start_time = time.time()
@@ -170,8 +171,11 @@ def game():
                 for j in range(len(maze[i])):
                     SCREEN.blit(wall_image if maze[i][j] else background_image, (j * CELL_SIZE, i * CELL_SIZE))
             
-            SCREEN.blit(player_images[player_direction], (player_x * CELL_SIZE, player_y * CELL_SIZE))
+            player_rect = pygame.Rect(player_x, player_y, CELL_SIZE, CELL_SIZE)
+            SCREEN.blit(player_images[player_direction], (player_x, player_y))
+            exit_rect = pygame.Rect(exit_x * CELL_SIZE, exit_y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
             SCREEN.blit(exit_image, (exit_x * CELL_SIZE, exit_y * CELL_SIZE))
+            
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -179,7 +183,7 @@ def game():
                     pygame.quit()
                     return
             
-            if player_x == exit_x and player_y == exit_y:
+            if player_rect.colliderect(exit_rect):
                 level += 1
                 player_x, player_y = 0, 0
                 break
@@ -201,20 +205,40 @@ def game():
             level_text = font.render(f"Level: {level}", True, BLUE)
             SCREEN.blit(level_text, (WIDTH - level_text.get_width() - 10, 10))
             
-            # Обробка клавіш
             keys = pygame.key.get_pressed()
-            if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and player_x > 0 and maze[player_y][player_x - 1] == 0:
-                player_x -= 1
+            new_x, new_y = player_x, player_y
+            
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                new_x -= player_speed
                 player_direction = "left"
-            if (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and player_x < len(maze[0]) - 1 and maze[player_y][player_x + 1] == 0:
-                player_x += 1
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                new_x += player_speed
                 player_direction = "right"
-            if (keys[pygame.K_UP] or keys[pygame.K_w]) and player_y > 0 and maze[player_y - 1][player_x] == 0:
-                player_y -= 1
+            if keys[pygame.K_UP] or keys[pygame.K_w]:
+                new_y -= player_speed
                 player_direction = "up"
-            if (keys[pygame.K_DOWN] or keys[pygame.K_s]) and player_y < len(maze) - 1 and maze[player_y + 1][player_x] == 0:
-                player_y += 1
+            if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+                new_y += player_speed
                 player_direction = "down"
+
+            new_rect = pygame.Rect(new_x, new_y, CELL_SIZE - 2, CELL_SIZE - 2)
+
+            collision = False
+            for i in range(len(maze)):
+                for j in range(len(maze[i])):
+                    if maze[i][j] == 1:  # Wall
+                        wall_rect = pygame.Rect(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                        if new_rect.colliderect(wall_rect):
+                            collision = True
+                            break
+                if collision:
+                    break
+            
+            if not collision:
+                player_x, player_y = new_x, new_y
+
+            player_x = max(0, min(player_x, WIDTH - CELL_SIZE))
+            player_y = max(0, min(player_y, HEIGHT - CELL_SIZE))
             
             pygame.display.flip()
             clock.tick(10)
