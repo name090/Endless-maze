@@ -4,7 +4,7 @@ import time
 from collections import deque
 
 # Історія: Славетного лицаря якого вязали в замку його завданя вийти з ного, і я не знаю що він робитеме на волі траву нухати? чи що?
-
+# тест
 # Ініціалізація pygame
 pygame.init()
 pygame.mixer.init()
